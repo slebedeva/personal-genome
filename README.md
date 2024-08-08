@@ -8,7 +8,10 @@ I use a laptop with 16G RAM and Ubuntu operating system.
 
 Here are the tools that we will be using:
 - [IGV genome browser](https://igv.org/) - for visualization
- - [samtools](https://www.htslib.org/) - for processing genome alignments
+ - [samtools](https://www.htslib.org/) - for processing genome alignment (BAM) files
+ - [bcftools](https://samtools.github.io/bcftools/bcftools.html) - for manipulating variant call format (VCF) files
+
+I prefer to use Docker images for most of the tools, if such an image exists.
 
 ## Data
 
@@ -87,3 +90,19 @@ Looks like people with A like cilantro and people with C hate it. What about me?
 *Note: A single T is probably an error in the sequencing process - this can happen, especially at an end of the read*
 
 Well, I used to hate cilantro as a child and I am crazy about it as an adult. I am not a neuroscientist, but this gene is an olfactory receptor (what OR in the gene name stands for) and it seems that [neurons express them in monoallelic fashion](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4882762/) - in contrast to usual situation, when both alleles of a gene are active. Could it be that cilantro loving neurons took over as I grew up? Who knows, but I am not unhappy about the fact.
+
+## Annotating variants
+
+We will follow this [helpful resource from Merriman Lab](https://merrimanlab.github.io/post/2021-09-21-vcf-annotation/).
+
+VCF file from Dante labs does not contain SNP IDs (rs...). To add them, we would first need to get them from dbSNP database which is hosted by NCBI.
+
+- Download the dbSNP VCF from this FTP site: https://ftp.ncbi.nih.gov/snp/organisms/human_9606_b151_GRCh37p13/VCF/. Again, make sure that the version of the genome corresponds to the reference that has been used by Dante labs. 
+
+  Since my internet connection at home is slow, I decided to only use common SNPs file, which is 1.5G (all SNPs is 15G and would take too long to download): `00-common_all.vcf.gz`. You will also need the `00-common_all.vcf.gz.tbi` index.
+
+- Use bcftools to annotate your VCF like this:
+  ```
+  bcftools annotate -a 00-common_all.vcf.gz -c ID -o GFX0000000.filtered.snp.dbsnp_annotated.vcf.gz -O z GFX0000000.filtered.snp.vcf.gz
+  ```
+  Replace GFX0000000... with your actual VCF file name.
