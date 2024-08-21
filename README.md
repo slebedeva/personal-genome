@@ -8,10 +8,10 @@ I use a laptop with 16G RAM and Ubuntu operating system.
 
 Here are the tools that we will be using:
 - [IGV genome browser](https://igv.org/) - for visualization
- - [samtools](https://www.htslib.org/) - for processing genome alignment (BAM) files
- - [bcftools](https://samtools.github.io/bcftools/bcftools.html) - for manipulating variant call format (VCF) files
+- [samtools](https://www.htslib.org/) - for processing genome alignment (BAM) files
+- [bcftools](https://samtools.github.io/bcftools/bcftools.html) - for manipulating variant call format (VCF) files
+- Illumina's [akt](https://github.com/Illumina/akt) - ancestry and kinship toolkit - for projecting onto 1000 genomes pca 
 
-I prefer to use Docker images for most of the tools, if such an image exists.
 
 ## Data
 
@@ -42,7 +42,7 @@ GFX0000000.cnv.vcf.gz.tbi | index file for CNV
 
 ## Looking at your genome
 
-I prefer [IGV genome browser](https://igv.org/doc/desktop/) to look at the genomic data.
+I use [IGV genome browser](https://igv.org/doc/desktop/) to look at the genomic data.
 
 - Download IGV according to your system and load your data according to the [manual](https://igv.org/doc/desktop/#QuickStart/):
   - Choose reference genome. In my case it is Human (GRCh37/hg19). ([see below](#how-to-find-the-reference-genome))
@@ -50,7 +50,7 @@ I prefer [IGV genome browser](https://igv.org/doc/desktop/) to look at the genom
   - Go to File -> Load from file and select your bam and/or vcf file. For example, I loaded bam and SNP vcf.
 
 ---
-#### How to find the reference genome
+#### How to find out which reference genome to use
 
 Dante labs may have update their reference to a newer one, hg38. We can use samtools to look at the header of the BAM alignment file, which stores the full command which have been used to process the data, including path to the reference. 
 
@@ -99,10 +99,26 @@ VCF file from Dante labs does not contain SNP IDs (rs...). To add them, we would
 
 - Download the dbSNP VCF from this FTP site: https://ftp.ncbi.nih.gov/snp/organisms/human_9606_b151_GRCh37p13/VCF/. Again, make sure that the version of the genome corresponds to the reference that has been used by Dante labs. 
 
-  Since my internet connection at home is slow, I decided to only use common SNPs file, which is 1.5G (all SNPs is 15G and would take too long to download): `00-common_all.vcf.gz`. You will also need the `00-common_all.vcf.gz.tbi` index.
+  If your internet connection at home is slow, you could use common SNPs file, which is 1.5G (all SNPs is 15G and would take too long to download): `00-common_all.vcf.gz`. You will also need the `00-common_all.vcf.gz.tbi` index. Alternatively, download the full `00-All.vcf.gz`.
 
 - Use bcftools to annotate your VCF like this:
   ```
   bcftools annotate -a 00-common_all.vcf.gz -c ID -o GFX0000000.filtered.snp.dbsnp_annotated.vcf.gz -O z GFX0000000.filtered.snp.vcf.gz
   ```
   Replace GFX0000000... with your actual VCF file name.
+  
+## Visualizing your ancestry
+
+We can use the data from [1000 genomes project](https://www.internationalgenome.org/) to visualize where among the big populations our ancestry lies. This was inspired by [this great blogpost by Wendy Wong](https://wendy-wong.medium.com/sample-swap-of-my-genome-from-dante-labs-e154d1a3e423), who found out this way that their sample was swapped by Dante labs! :scream:
+
+We will use Illumina's ancestry and kinship toolkit ([akt](https://github.com/Illumina/akt)) which already has all the necessary data in the right format. Follow instructions to clone the akt repository and install akt.
+
+After that run the following command to project your genome onto principal components of the 1000 genomes and create the file `1000G.pca.txt`:
+
+`akt pca --assume-homref -W ./data/wgs.grch37.vcf.gz ../../genomes/GFX00000000.filtered.snp.vcf.gz > 1000G.pca.txt`
+
+Usually the first two principal components are taken for visualization. We can plot our genome together with the 1000 genomes on a scatterplot (see `notebooks/Plot_1000genomes_PCA.ipynb`):
+
+![](images/pca.png)
+
+It looks plausible for me to be among the European population, so this time hopefully no  sample swap!
